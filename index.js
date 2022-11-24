@@ -20,6 +20,13 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const usersCollection = client.db("puranaPhone").collection("users");
+    const categorCollection = client.db("puranaPhone").collection("category");
+
+    app.get("/category", async (req, res) => {
+      const query = {};
+      const catagories = await categorCollection.find(query).toArray();
+      res.send(catagories);
+    });
 
     app.get("/users", async (req, res) => {
       const query = {};
