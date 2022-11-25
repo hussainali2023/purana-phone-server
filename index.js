@@ -1,7 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { query } = require("express");
 
 const port = process.env.PORT || 5000;
 
@@ -21,11 +22,21 @@ async function run() {
   try {
     const usersCollection = client.db("puranaPhone").collection("users");
     const categorCollection = client.db("puranaPhone").collection("category");
+    const productsCollection = client.db("puranaPhone").collection("products");
 
     app.get("/category", async (req, res) => {
       const query = {};
       const catagories = await categorCollection.find(query).toArray();
       res.send(catagories);
+    });
+
+    app.get("/category/:companyName", async (req, res) => {
+      const companyName = req.params.companyName;
+      const query = {
+        companyName: companyName,
+      };
+      const category = await productsCollection.find(query).toArray();
+      return res.send(category);
     });
 
     app.get("/users", async (req, res) => {
