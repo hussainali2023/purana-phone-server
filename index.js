@@ -1,8 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-const { query } = require("express");
+const jwt = require("jsonwebtoken");
+const { MongoClient, ServerApiVersion } = require("mongodb");
 
 const port = process.env.PORT || 5000;
 
@@ -18,16 +18,47 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send("unauthorized access");
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+    if (err) {
+      return res.status(403).send({ message: "forbidden access" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+}
+
 async function run() {
   try {
     const usersCollection = client.db("puranaPhone").collection("users");
     const categorCollection = client.db("puranaPhone").collection("category");
     const productsCollection = client.db("puranaPhone").collection("products");
+    const bookingsCollection = client.db("puranaPhone").collection("bookings");
 
     app.get("/category", async (req, res) => {
       const query = {};
       const catagories = await categorCollection.find(query).toArray();
       res.send(catagories);
+    });
+
+    app.get("/jwt", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      if (user) {
+        const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
+          expiresIn: "1d",
+        });
+        return res.send({ accessToken: token });
+      }
+      res.status(403).send({ accessToken: "" });
     });
 
     app.get("/category/:companyName", async (req, res) => {
@@ -39,7 +70,7 @@ async function run() {
       return res.send(category);
     });
 
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyJWT, async (req, res) => {
       const query = {};
       const users = await usersCollection.find(query).toArray();
       res.send(users);
@@ -51,11 +82,23 @@ async function run() {
       const user = await usersCollection.findOne(query);
       res.send({ isAdmin: user?.role === "admin" });
     });
+    app.get("/users/seller/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      res.send({ isSeller: user?.role === "seller" });
+    });
 
     app.post("/adduser", async (req, res) => {
       const user = req.body;
       console.log(user);
       const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
+    app.post("/bookings", async (req, res) => {
+      const booking = req.body;
+      const result = await bookingsCollection.insertOne(booking);
       res.send(result);
     });
   } catch (data) {
