@@ -48,6 +48,21 @@ async function run() {
       res.send(catagories);
     });
 
+    app.post("/category", async (req, res) => {
+      const category = req.body;
+      console.log(category);
+      const result = await categorCollection.insertOne(category);
+      res.send(result);
+    });
+
+    app.get("/category/companyName", async (req, res) => {
+      const query = {};
+      const catagories = await categorCollection
+        .find(query, { projection: { companyName: 1, _id: 0 } })
+        .toArray();
+      res.send(catagories);
+    });
+
     app.get("/jwt", async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
