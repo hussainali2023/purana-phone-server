@@ -70,8 +70,18 @@ async function run() {
       return res.send(category);
     });
 
-    app.get("/users", verifyJWT, async (req, res) => {
-      const query = {};
+    app.get("/users/buyer", async (req, res) => {
+      const query = {
+        role: "buyer",
+      };
+      const users = await usersCollection.find(query).toArray();
+      res.send(users);
+    });
+
+    app.get("/users/seller", async (req, res) => {
+      const query = {
+        role: "seller",
+      };
       const users = await usersCollection.find(query).toArray();
       res.send(users);
     });
@@ -96,10 +106,31 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/users/buyer", async (req, res) => {
+      const query = {};
+      const users = await usersCollection.find(query).toArray();
+      if (users.role === "buyer") {
+        res.send(users);
+      }
+    });
+
     app.post("/bookings", async (req, res) => {
       const booking = req.body;
       const result = await bookingsCollection.insertOne(booking);
       res.send(result);
+    });
+
+    app.get("/bookings", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+      const decodedEmail = req.decoded.email;
+
+      if (email !== decodedEmail) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
+      const query = { email: email };
+      const bookings = await bookingsCollection.find(query).toArray();
+      res.send(bookings);
     });
   } catch (data) {
     console.log(data);
