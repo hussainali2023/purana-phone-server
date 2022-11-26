@@ -161,6 +161,13 @@ async function run() {
       const products = await productsCollection.find(query).toArray();
       res.send(products);
     });
+
+    app.post("/products", async (req, res) => {
+      const products = req.body;
+      console.log(products);
+      const result = await productsCollection.insertOne(products);
+      res.send(result);
+    });
   } catch (data) {
     console.log(data);
   }
